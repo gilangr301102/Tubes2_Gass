@@ -1,6 +1,7 @@
-package main
+package controllers
 
 import (
+	"example/user/hello/utils"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,9 +9,38 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-func main() {
+// func GetScrappingData2(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+// 	vars := mux.Vars(r)
+// 	var userId int
+// 	var err error
+
+// 	if searchName, err = strconv.Atoi(vars["searchName"]); err != nil {
+// 		panic(err)
+// 	}
+
+// 	data := services.getNeighbors(searchName)
+// 	// Status 200 OK
+// 	if data.length > 0 {
+// 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+// 		w.WriteHeader(http.StatusOK)
+// 		if err := json.NewEncoder(w).Encode(user); err != nil {
+// 			panic(err)
+// 		}
+// 		return
+// 	}
+
+// 	// If we didn't find it, 404
+// 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+// 	w.WriteHeader(http.StatusNotFound)
+
+// 	if err := json.NewEncoder(w).Encode(models.JsonError{Code: http.StatusNotFound, Text: "Not Found"}); err != nil {
+// 		panic(err)
+// 	}
+// }
+
+func GetScrappingData(searchName string) [][]string {
 	// Define the URL of the Wikipedia page
-	url := "https://en.wikipedia.org/wiki/indonesia"
+	url := utils.URL_SCRAPPING_WIKIPEDIA + searchName
 
 	// Define a user-agent header to simulate a browser request
 	headers := map[string]string{
@@ -32,9 +62,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer response.Body.Close()
 
-	print(response)
+	data := [][]string{}
 
 	// Check if the request was successful (status code 200)
 	if response.StatusCode == 200 {
@@ -43,9 +74,6 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		// Initialize empty slice to store the table data
-		data := [][]string{}
 
 		// Iterate through the rows of the table
 		doc.Find("tr").Each(func(rowIdx int, row *goquery.Selection) {
@@ -61,9 +89,9 @@ func main() {
 			})
 			data = append(data, rowData)
 		})
-
-		fmt.Print(data[0])
 	} else {
 		fmt.Println("Failed to retrieve the web page. Status code:", response.StatusCode)
 	}
+
+	return data
 }
