@@ -2,32 +2,30 @@ package routes
 
 import (
 	"example/user/hello/controllers"
-	"fmt"
-	"net/http"
+	"log"
 
 	"github.com/gorilla/mux"
+	"github.com/urfave/negroni"
 )
 
-// func GetScrappingRoutes(router *mux.Router) *mux.Router {
-// 	router.Handle(
-// 		"/scrap/{srapName}",
-// 		negroni.New(
-// 			negroni.HandlerFunc(controllers.GetScrappingData2),
-// 		)).Methods("GET")
+func GetScrappingRoute(router *mux.Router) *mux.Router {
 
-// 	return router
-// }
+	router.Handle(
+		"/api/scrap/{searchName}",
+		negroni.New(
+			negroni.HandlerFunc(controllers.GetScrappingData),
+		)).Methods("GET")
 
-func GetScrappingRoutes(w http.ResponseWriter, r *http.Request) {
-	// Get the search name parameter from the URL
-	params := mux.Vars(r)
-	searchName := params["searchName"]
+	return router
+}
 
-	// Call the GetScrappingData function from the controller
-	data := controllers.GetScrappingData(searchName)
+func GetAllRoutes() *mux.Router {
+	router := mux.NewRouter()
 
-	// Send the data as JSON response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "%v", data)
+	//Set Router Routes
+	router = GetScrappingRoute(router)
+
+	log.Printf("Listening All Routes...")
+
+	return router
 }

@@ -6,24 +6,22 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/urfave/negroni"
 )
 
 func main() {
-	// port := os.Getenv("PORT")
-	// fmt.Println("PORT: ")
-	// fmt.Println(port)
-	// if port == "" {
-	// 	log.Fatal("$PORT must be set")
-	// }
+	port := "8080"
 
-	// Create a new router
-	router := mux.NewRouter()
+	if port == "" {
+		log.Fatal("$PORT must be set")
+	}
 
-	// Define the route with a searchName parameter
-	router.HandleFunc("/api/scrap/{searchName}", routes.GetScrappingRoutes).Methods("GET")
+	// Setup for Router, Endpoints, Handlers and middleware
+	router := routes.GetAllRoutes()
+	middleWare := negroni.Classic()
+	middleWare.UseHandler(router)
 
-	// Start the server
+	// Serves API - Creates a new thread and if fails it will log the error.
 	fmt.Println("Server is running on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":"+port, middleWare))
 }

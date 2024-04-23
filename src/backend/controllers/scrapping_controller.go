@@ -1,44 +1,23 @@
 package controllers
 
 import (
+	"encoding/json"
+	"example/user/hello/models"
 	"example/user/hello/utils"
 	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/gorilla/mux"
 )
 
-// func GetScrappingData2(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-// 	vars := mux.Vars(r)
-// 	var userId int
-// 	var err error
+func GetScrappingData(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	var err error
 
-// 	if searchName, err = strconv.Atoi(vars["searchName"]); err != nil {
-// 		panic(err)
-// 	}
+	params := mux.Vars(r)
+	searchName := params["searchName"]
 
-// 	data := services.getNeighbors(searchName)
-// 	// Status 200 OK
-// 	if data.length > 0 {
-// 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-// 		w.WriteHeader(http.StatusOK)
-// 		if err := json.NewEncoder(w).Encode(user); err != nil {
-// 			panic(err)
-// 		}
-// 		return
-// 	}
-
-// 	// If we didn't find it, 404
-// 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-// 	w.WriteHeader(http.StatusNotFound)
-
-// 	if err := json.NewEncoder(w).Encode(models.JsonError{Code: http.StatusNotFound, Text: "Not Found"}); err != nil {
-// 		panic(err)
-// 	}
-// }
-
-func GetScrappingData(searchName string) [][]string {
 	// Define the URL of the Wikipedia page
 	url := utils.URL_SCRAPPING_WIKIPEDIA + searchName
 
@@ -93,5 +72,23 @@ func GetScrappingData(searchName string) [][]string {
 		fmt.Println("Failed to retrieve the web page. Status code:", response.StatusCode)
 	}
 
-	return data
+	// data := utils.getNeighbors(searchName)
+
+	// Status 200 OK
+	if len(data) > 0 {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(data); err != nil {
+			panic(err)
+		}
+		return
+	}
+
+	// If we didn't find it, 404
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusNotFound)
+
+	if err := json.NewEncoder(w).Encode(models.JsonError{Code: http.StatusNotFound, Text: "Not Found"}); err != nil {
+		panic(err)
+	}
 }
