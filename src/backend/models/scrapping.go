@@ -5,4 +5,4 @@ type ScrappingData struct {
 	Url   string `json:"url"`
 }
 
-type ScrappingDatas []ScrappingData
+type ScrappingDatas [][]ScrappingData

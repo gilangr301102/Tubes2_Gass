@@ -1,27 +1,51 @@
 package main
 
 import (
-	"example/user/hello/routes"
 	"fmt"
 	"log"
-	"net/http"
+	"strings"
 
-	"github.com/urfave/negroni"
+	"github.com/PuerkitoBio/goquery"
 )
 
-func main() {
-	port := "8080"
+var prefixes = [...]string{"/wiki/Main_Page", "/wiki/Special", "/wiki/File", "/wiki/Help", "/wiki/Wikipedia:"}
 
-	if port == "" {
-		log.Fatal("$PORT must be set")
+/* checkListOfPrefixes: Checks url against slice of prefixes to ensure the linke is to an article.*/
+func checkListOfPrefixes(href string) bool {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(href, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func toTitleCase(s string) string {
+	return strings.ReplaceAll(s, "_", " ")
+}
+
+func getNeighbours(url string) []string {
+	doc, err := goquery.NewDocument(url)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	// Setup for Router, Endpoints, Handlers and middleware
-	router := routes.GetAllRoutes()
-	middleWare := negroni.Classic()
-	middleWare.UseHandler(router)
+	// Find the review items
+	var links []string
+	doc.Find("#mw-content-text").Find("a").Each(func(i int, s *goquery.Selection) {
+		href, exists := s.Attr("href")
+		if exists && strings.HasPrefix(href, "/wiki/") && !checkListOfPrefixes(href) {
+			title := toTitleCase(strings.TrimPrefix(href, "/wiki/"))
+			links = append(links, title)
+		}
+	})
+	return links
+}
 
-	// Serves API - Creates a new thread and if fails it will log the error.
-	fmt.Println("Server is running on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":"+port, middleWare))
+func main() {
+	wikipediaURL := "https://en.wikipedia.org/wiki/Indonesia"
+
+	var test = getNeighbours(wikipediaURL)
+	fmt.Println(test)
+
 }

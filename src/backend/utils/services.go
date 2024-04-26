@@ -8,8 +8,8 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-func getNeighbors(searchName string) [][]string {
-	url := URL_SCRAPPING_WIKIPEDIA + searchName
+func getNeighbors(searchSource string, searchGoal string) [][]string {
+	url := URL_SCRAPPING_WIKIPEDIA + searchSource
 
 	// Define a user-agent header to simulate a browser request
 	headers := map[string]string{
