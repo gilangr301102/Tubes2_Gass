@@ -3,12 +3,14 @@ package utils
 import (
 	"backend/wikirace/models"
 	"log"
+	"runtime"
 	"sync"
 )
 
-// var numNodesPerLevelIDS int = runtime.NumCPU() * 10
+var numNodesPerLevel int = runtime.NumCPU() * 10
 
-func getPathIDS(articleToParent *map[string]string, endArticle string) *[]string {
+// getPathIDDFS retrieves the path using IDDFS.
+func getPathIDDFS(articleToParent *map[string]string, endArticle string) *[]string {
 	reversedPath := make([]string, 0)
 	currentArticle := endArticle
 	for currentArticle != "root" {
@@ -23,32 +25,28 @@ func getPathIDS(articleToParent *map[string]string, endArticle string) *[]string
 	return &path
 }
 
-func performIDS(startArticle string, endArticle string, depthLimit int, articleToParent *map[string]string, outputCh chan models.ArticleInfo1, wg *sync.WaitGroup) {
-	defer wg.Done()
+// IDDFS performs Iterative Deepening Depth-First Search.
+func IDDFS(startArticle string, endArticle string, maxDepth int, articleToParent *map[string]string, outputCh chan models.ArticleInfo1, wg *sync.WaitGroup) bool {
 	if startArticle == endArticle {
-		log.Printf("Successfully Found the Solution!")
-		return
+		return true
 	}
-	if depthLimit <= 0 {
-		return
+	if maxDepth <= 0 {
+		return false
 	}
-	scrappedDatas := make([]string, 0)
-	go scrappedArticleAndSync(startArticle, outputCh, nil)
 	for articleWithParent := range outputCh {
 		nextArticle := articleWithParent.Article
-		if nextArticle != startArticle {
-			scrappedDatas = append(scrappedDatas, nextArticle)
+		if (*articleToParent)[nextArticle] == "" {
+			(*articleToParent)[nextArticle] = articleWithParent.ParentArticle
+			if IDDFS(nextArticle, endArticle, maxDepth-1, articleToParent, outputCh, wg) {
+				return true
+			}
 		}
 	}
-	log.Printf("Depth %d: Collected %d outputs from scrapping data the child\n", depthLimit, len(scrappedDatas))
-	for _, article := range scrappedDatas {
-		(*articleToParent)[article] = startArticle
-		wg.Add(1)
-		go performIDS(article, endArticle, depthLimit-1, articleToParent, outputCh, wg)
-	}
+	return false
 }
 
-func GetShortestPathIDS(startUrl string, endUrl string, maxDepth int) (*[]string, *map[string]string) {
+// GetShortestPathIDDFS finds the shortest path using IDDFS.
+func GetShortestPathIDDFS(startUrl string, endUrl string, maxDepth int) (*[]string, *map[string]string) {
 	articleToParent := make(map[string]string)
 	emptyPath := make([]string, 0)
 
@@ -57,15 +55,12 @@ func GetShortestPathIDS(startUrl string, endUrl string, maxDepth int) (*[]string
 		log.Printf("Invalid StartURL: %s\n", startUrl)
 		return &emptyPath, &articleToParent
 	}
-
 	endArticle, err := GetArticleNameFromURLString(endUrl)
 	if err != nil || !IsReachable(endUrl) {
 		log.Printf("Invalid EndURL: %s\n", endUrl)
 		return &emptyPath, &articleToParent
 	}
-
 	articleToParent[startArticle] = "root"
-
 	if startUrl == endUrl {
 		emptyPath = append(emptyPath, startUrl)
 		return &emptyPath, &articleToParent
@@ -74,13 +69,60 @@ func GetShortestPathIDS(startUrl string, endUrl string, maxDepth int) (*[]string
 	outputCh := make(chan models.ArticleInfo1)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go performIDS(startArticle, endArticle, maxDepth, &articleToParent, outputCh, &wg)
-	wg.Wait()
+	go scrappedArticleAndSync(startArticle, outputCh, &wg)
+	go closeChannelOnWg(outputCh, &wg)
 
-	if articleToParent[endArticle] == "" {
-		log.Printf("Solution not found within depth limit.")
-		return &emptyPath, &articleToParent
+	level := 0
+	found := false
+
+	for {
+		scrappedDatas := make([]string, 0)
+		for articleWithParent := range outputCh {
+			nextArticle := articleWithParent.Article
+			if articleToParent[nextArticle] == "" {
+				articleToParent[nextArticle] = articleWithParent.ParentArticle
+				if nextArticle == endArticle {
+					found = true
+					break
+				}
+				scrappedDatas = append(scrappedDatas, nextArticle)
+			}
+		}
+		log.Printf("Level %d\n", level)
+		if found {
+			log.Printf("Successfully Found the Solution!")
+			break
+		}
+		log.Printf(
+			"Collected %d outputs from scrapping data the child\n",
+			len(scrappedDatas))
+		level++
+
+		inputCh := make(chan string)
+		nextOutputCh := make(chan models.ArticleInfo1, 1000)
+		var nextWg sync.WaitGroup
+		nextWg.Add(numNodesPerLevel)
+		for i := 0; i < numNodesPerLevel; i++ {
+			go scrappedArticlesAndSync(inputCh, nextOutputCh, &nextWg)
+		}
+
+		go closeChannelOnWg(nextOutputCh, &nextWg)
+		log.Printf("Level %d: Started %d Scrapeds\n", level, numNodesPerLevel)
+
+		go feedArticlesIntoChannel(scrappedDatas, inputCh)
+		outputCh = nextOutputCh
+
+		if level >= maxDepth {
+			log.Printf("Maximum Depth Reached!")
+			break
+		}
+
+		// Perform IDDFS at the current level
+		if IDDFS(startArticle, endArticle, level, &articleToParent, outputCh, &nextWg) {
+			found = true
+			break
+		}
 	}
 
-	return getPathIDS(&articleToParent, endArticle), &articleToParent
+	return getPathIDDFS(&articleToParent, endArticle), &articleToParent
 }

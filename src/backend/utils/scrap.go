@@ -2,6 +2,7 @@ package utils
 
 import (
 	"backend/wikirace/models"
+	"fmt"
 	"net/http"
 
 	"golang.org/x/net/html"
@@ -14,6 +15,7 @@ func getChilds(article string, ch chan models.ArticleInfo1) {
 		for _, childArticle := range *childArticles {
 			ch <- models.ArticleInfo1{childArticle, article}
 		}
+		fmt.Println("Already scrapped1: ", ch)
 		return
 	}
 
@@ -55,4 +57,5 @@ func getChilds(article string, ch chan models.ArticleInfo1) {
 	}
 
 	Articles.Add(article, &childArticles)
+	fmt.Println("Already scrapped2: ", Articles)
 }
