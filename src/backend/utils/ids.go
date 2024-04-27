@@ -46,24 +46,25 @@ func IDDFS(startArticle string, endArticle string, maxDepth int, articleToParent
 }
 
 // GetShortestPathIDDFS finds the shortest path using IDDFS.
-func GetShortestPathIDDFS(startUrl string, endUrl string, maxDepth int) (*[]string, *map[string]string) {
+func GetShortestPathIDDFS(startUrl string, endUrl string, maxDepth int) (*[]string, *map[string]string, string) {
 	articleToParent := make(map[string]string)
 	emptyPath := make([]string, 0)
+	maxDepthReachedMsg := ""
 
 	startArticle, err := GetArticleNameFromURLString(startUrl)
 	if err != nil || !IsReachable(startUrl) {
 		log.Printf("Invalid StartURL: %s\n", startUrl)
-		return &emptyPath, &articleToParent
+		return &emptyPath, &articleToParent, "Invalid StartURL"
 	}
 	endArticle, err := GetArticleNameFromURLString(endUrl)
 	if err != nil || !IsReachable(endUrl) {
 		log.Printf("Invalid EndURL: %s\n", endUrl)
-		return &emptyPath, &articleToParent
+		return &emptyPath, &articleToParent, "Invalid EndURL"
 	}
 	articleToParent[startArticle] = "root"
 	if startUrl == endUrl {
 		emptyPath = append(emptyPath, startUrl)
-		return &emptyPath, &articleToParent
+		return &emptyPath, &articleToParent, "Start and End URLs are the same"
 	}
 
 	outputCh := make(chan models.ArticleInfo1)
@@ -113,7 +114,8 @@ func GetShortestPathIDDFS(startUrl string, endUrl string, maxDepth int) (*[]stri
 		outputCh = nextOutputCh
 
 		if level >= maxDepth {
-			log.Printf("Maximum Depth Reached!")
+			maxDepthReachedMsg = "Maximum Depth Reached!"
+			log.Printf(maxDepthReachedMsg)
 			break
 		}
 
@@ -124,5 +126,9 @@ func GetShortestPathIDDFS(startUrl string, endUrl string, maxDepth int) (*[]stri
 		}
 	}
 
-	return getPathIDDFS(&articleToParent, endArticle), &articleToParent
+	if maxDepthReachedMsg != "" {
+		return &emptyPath, &articleToParent, maxDepthReachedMsg
+	}
+
+	return getPathIDDFS(&articleToParent, endArticle), &articleToParent, ""
 }

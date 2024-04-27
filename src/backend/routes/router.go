@@ -37,10 +37,12 @@ func wikiraceIDS(c *gin.Context) {
 	// }
 
 	var path *[]string = nil
+	var message string = ""
 	if len(sourceUrl) != 0 && len(goalUrl) != 0 {
-		path, _ = utils.GetShortestPathIDDFS(sourceUrl, goalUrl, 1)
+		path, _, message = utils.GetShortestPathIDDFS(sourceUrl, goalUrl, 1)
 		c.JSON(http.StatusOK, gin.H{
-			"path": path,
+			"path":    path,
+			"message": message,
 		})
 	} else {
 		c.JSON(http.StatusBadRequest, nil)
