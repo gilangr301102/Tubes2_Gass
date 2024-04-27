@@ -1,4 +1,4 @@
-module example/user/hello
+module backend/wikirace
 
 go 1.22.1
 

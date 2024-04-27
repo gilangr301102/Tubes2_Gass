@@ -1,7 +1,7 @@
 package main
 
 import (
-	"example/user/hello/routes"
+	"backend/wikirace/routes"
 	"log"
 	"time"
 )

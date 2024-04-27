@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -43,4 +44,12 @@ func IsReachable(inputUrl string) bool {
 	}
 	resp.Body.Close()
 	return resp.StatusCode == 200
+}
+
+func convertStrToInt(str string) int {
+	num, err := strconv.Atoi(str)
+	if err != nil {
+		return 0
+	}
+	return num
 }

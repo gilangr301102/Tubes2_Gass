@@ -1,9 +1,9 @@
 package controllers
 
 import (
+	"backend/wikirace/models"
+	"backend/wikirace/utils"
 	"encoding/json"
-	"example/user/hello/models"
-	"example/user/hello/utils"
 	"fmt"
 	"log"
 	"net/http"

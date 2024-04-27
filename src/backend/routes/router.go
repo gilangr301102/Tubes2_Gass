@@ -1,9 +1,10 @@
 package routes
 
 import (
-	"example/user/hello/utils"
+	"backend/wikirace/utils"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,13 +28,38 @@ func wikiraceBFS(c *gin.Context) {
 		sourceUrl, goalUrl, path)
 }
 
+func wikiraceIDS(c *gin.Context) {
+	sourceUrl := c.PostForm("sourceUrl")
+	goalUrl := c.PostForm("goalUrl")
+	maxDepth := c.PostForm("maxDepth")
+	maxDepthNum, err := strconv.Atoi(maxDepth)
+	if err != nil {
+		maxDepthNum = 0
+	}
+
+	var path *[]string = nil
+	if len(sourceUrl) != 0 && len(goalUrl) != 0 {
+		path, _ = utils.GetShortestPathIDS(sourceUrl, goalUrl, maxDepthNum)
+		c.JSON(http.StatusOK, gin.H{
+			"path": path,
+		})
+	} else {
+		c.JSON(http.StatusBadRequest, nil)
+	}
+
+	log.Printf(
+		"Request server with Start URL: %s, End URL: %s,  Max Depth: %d, Path: %s\n",
+		sourceUrl, goalUrl, maxDepthNum, path)
+}
+
 func ServeRoutes() *gin.Engine {
 
 	router := gin.Default()
 
 	log.Printf("Listening and Serving Server...")
 
-	router.POST("/wikirace", wikiraceBFS)
+	router.POST("/wikiraceBFS", wikiraceBFS)
+	router.POST("/wikiraceIDS", wikiraceIDS)
 
 	return router
 }

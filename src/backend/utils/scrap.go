@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"example/user/hello/models"
+	"backend/wikirace/models"
 	"net/http"
 
 	"golang.org/x/net/html"
