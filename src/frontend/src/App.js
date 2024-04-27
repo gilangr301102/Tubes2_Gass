@@ -45,8 +45,8 @@ const GraphVisualization = ({ paths, nodes }) => {
 
 const App = () => {
   const [algorithm, setAlgorithm] = useState('IDS');
-  const [startUrl, setStartUrl] = useState('');
-  const [endUrl, setEndUrl] = useState('');
+  const [sourceTitle, setsourceTitle] = useState('');
+  const [goalTitle, setgoalTitle] = useState('');
   const [maxDepth, setMaxDepth] = useState('');
   const [isFindAll, setIsFindAll] = useState('');
   const [nodes, setNodes] = useState([]);
@@ -62,8 +62,8 @@ const App = () => {
     event.preventDefault();
     setIsLoading(true);
     const formData = new FormData();
-    formData.append('startUrl', startUrl);
-    formData.append('endUrl', endUrl);
+    formData.append('sourceTitle', sourceTitle);
+    formData.append('goalTitle', goalTitle);
     if (algorithm === 'IDS') {
       formData.append('maxDepth', maxDepth);
       formData.append('isFindAll', isFindAll);
@@ -71,8 +71,10 @@ const App = () => {
       formData.append('isFindAll', isFindAll);
     }
 
+    const apiEndpoint = algorithm === 'IDS' ? 'http://localhost:8080/wikiraceIDS' : 'http://localhost:8080/wikiraceBFS';
+
     try {
-      const response = await fetch('http://localhost:8080/wikirace', {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         body: formData,
       });
@@ -99,6 +101,7 @@ const App = () => {
       setIsLoading(false);
     }
   };
+
   return (
     <div className="App">
       <h1>Graph Visualization</h1>
@@ -114,22 +117,22 @@ const App = () => {
       <div className="form-container">
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="startUrl">Start URL:</label>
+            <label htmlFor="sourceTitle">Source Title:</label>
             <input
               type="text"
-              id="startUrl"
-              value={startUrl}
-              onChange={(e) => setStartUrl(e.target.value)}
+              id="sourceTitle"
+              value={sourceTitle}
+              onChange={(e) => setsourceTitle(e.target.value)}
               required
             />
           </div>
           <div className="form-group">
-            <label htmlFor="endUrl">End URL:</label>
+            <label htmlFor="goalTitle">Goal Title:</label>
             <input
               type="text"
-              id="endUrl"
-              value={endUrl}
-              onChange={(e) => setEndUrl(e.target.value)}
+              id="goalTitle"
+              value={goalTitle}
+              onChange={(e) => setgoalTitle(e.target.value)}
               required
             />
           </div>

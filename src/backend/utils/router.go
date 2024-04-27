@@ -29,8 +29,8 @@ func wikiraceBFS(c *gin.Context) {
 }
 
 func wikiraceIDS(c *gin.Context) {
-	sourceUrl := c.PostForm("sourceUrl")
-	goalUrl := c.PostForm("goalUrl")
+	sourceUrl := c.PostForm("sourceTitle")
+	goalUrl := c.PostForm("goalTitle")
 	maxDepth := c.PostForm("maxDepth")
 	isFindAll := c.PostForm("isFindAll")
 	isFindAllReq := false
