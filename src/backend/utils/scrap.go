@@ -10,12 +10,12 @@ import (
 	"golang.org/x/net/html"
 )
 
-func getChilds2(article string, ch chan ArticleInfo) {
+func getChilds2(article string, ch chan ArticleInfo1) {
 	if Articles.Contains(article) {
 		value, _ := Articles.Get(article)
 		childArticles := value.(*[]string)
 		for _, childArticle := range *childArticles {
-			ch <- ArticleInfo{childArticle, article}
+			ch <- ArticleInfo1{childArticle, article}
 		}
 		fmt.Println("Already scrapped1: ", ch)
 		return
@@ -44,7 +44,7 @@ func getChilds2(article string, ch chan ArticleInfo) {
 					if attr.Key == "href" {
 						nextArticle, err := GetArticleNameFromURLString(attr.Val)
 						if err == nil && !visited[nextArticle] {
-							ch <- ArticleInfo{Article: nextArticle, ParentArticle: article}
+							ch <- ArticleInfo1{Article: nextArticle, ParentArticle: article}
 							visited[nextArticle] = true
 							childArticles = append(childArticles, nextArticle)
 						}

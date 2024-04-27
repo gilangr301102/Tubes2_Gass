@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -9,28 +10,63 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func wikiraceBFS(c *gin.Context) {
-	sourceUrl := c.PostForm("sourceUrl")
-	goalUrl := c.PostForm("goalUrl")
+func Cors() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
+	}
+}
 
-	var path *[]string = nil
+func wikiraceBFS(c *gin.Context) {
+	sourceTitle := c.PostForm("sourceTitle")
+	goalTitle := c.PostForm("goalTitle")
+	isFindAll := c.PostForm("isFindAll")
+
+	sourceUrl := URL_SCRAPPING_WIKIPEDIA + handleUnderScore(sourceTitle)
+	goalUrl := URL_SCRAPPING_WIKIPEDIA + handleUnderScore(goalTitle)
 	if len(sourceUrl) != 0 && len(goalUrl) != 0 {
-		path, _ = GetShortestPathBFS(sourceUrl, goalUrl)
-		c.JSON(http.StatusOK, gin.H{
-			"path": path,
-		})
+		if isFindAll == "0" {
+			startTime := time.Now()
+			path, numOfArticlesChecked, articlesLoop := GetShortestSinglePathBFS(sourceUrl, goalUrl)
+			elapsedTime := time.Since(startTime).Seconds()
+			c.JSON(http.StatusOK, gin.H{
+				"path":                        path,
+				"message":                     "Success",
+				"num_of_article_checked":      numOfArticlesChecked,
+				"num_of_node_article_visited": articlesLoop,
+				"elapsed_time":                elapsedTime,
+			})
+			log.Printf("Path: %v\n", path)
+			fmt.Println(path)
+		} else {
+			startTime := time.Now()
+			path, numberPath, numOfArticlesChecked, articlesLoop := GetShortestMultiPathBFS(sourceUrl, goalUrl)
+			elapsedTime := time.Since(startTime).Seconds()
+			c.JSON(http.StatusOK, gin.H{
+				"path":                        path,
+				"message":                     "Success",
+				"num_of_article_checked":      numOfArticlesChecked,
+				"num_of_node_article_visited": articlesLoop,
+				"number_of_path":              numberPath,
+				"elapsed_time":                elapsedTime,
+			})
+			log.Printf("Path: %v\n", path)
+			fmt.Println(path)
+		}
 	} else {
 		c.JSON(http.StatusBadRequest, nil)
 	}
-
-	log.Printf(
-		"Request server with Start URL: %s, End URL: %s, Path: %s\n",
-		sourceUrl, goalUrl, path)
 }
 
 func wikiraceIDS(c *gin.Context) {
-	sourceUrl := c.PostForm("sourceTitle")
-	goalUrl := c.PostForm("goalTitle")
+	sourceTitle := c.PostForm("sourceTitle")
+	goalTitle := c.PostForm("goalTitle")
 	maxDepth := c.PostForm("maxDepth")
 	isFindAll := c.PostForm("isFindAll")
 	isFindAllReq := false
@@ -42,19 +78,18 @@ func wikiraceIDS(c *gin.Context) {
 		maxDepthNum = 0
 	}
 
-	startNode := Node{Title: sourceUrl, URL: URL_SCRAPPING_WIKIPEDIA + handleUnderScore(sourceUrl)}
-	targetNode := Node{Title: goalUrl, URL: URL_SCRAPPING_WIKIPEDIA + handleUnderScore(goalUrl)}
+	startNode := Node{Title: sourceTitle, URL: URL_SCRAPPING_WIKIPEDIA + handleUnderScore(sourceTitle)}
+	targetNode := Node{Title: goalTitle, URL: URL_SCRAPPING_WIKIPEDIA + handleUnderScore(goalTitle)}
 
-	startTime := time.Now()
-	numOfArticlesChecked, articlesLoop, numberPath, paths := getShortestPathIDS(startNode, targetNode, maxDepthNum, isFindAllReq)
-	elapsedTime := time.Since(startTime).Seconds()
+	fmt.Printf("Start URL: %s, End URL: %s, Max Depth: %d\n", startNode.URL, targetNode.URL, maxDepthNum)
 
-	var path *[]string = nil
-	var message string = ""
-	if len(sourceUrl) != 0 && len(goalUrl) != 0 {
+	if len(sourceTitle) != 0 && len(goalTitle) != 0 {
+		startTime := time.Now()
+		numOfArticlesChecked, articlesLoop, numberPath, paths := getShortestPathIDS(startNode, targetNode, maxDepthNum, isFindAllReq)
+		elapsedTime := time.Since(startTime).Seconds()
 		c.JSON(http.StatusOK, gin.H{
 			"path":                        paths,
-			"message":                     message,
+			"message":                     "Success",
 			"num_of_article_checked":      numOfArticlesChecked,
 			"num_of_node_article_visited": articlesLoop,
 			"number_of_path":              numberPath,
@@ -63,10 +98,6 @@ func wikiraceIDS(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusBadRequest, nil)
 	}
-
-	log.Printf(
-		"Request server with Start URL: %s, End URL: %s,  Max Depth: %d, Path: %s\n",
-		sourceUrl, goalUrl, maxDepthNum, path)
 }
 
 func ServeRoutes() *gin.Engine {
@@ -74,6 +105,9 @@ func ServeRoutes() *gin.Engine {
 	log.Printf("Initializing to Listening and Serving Server...")
 
 	router := gin.Default()
+
+	// Use the Cors middleware
+	router.Use(Cors())
 
 	router.POST("/wikiraceBFS", wikiraceBFS)
 	router.POST("/wikiraceIDS", wikiraceIDS)
