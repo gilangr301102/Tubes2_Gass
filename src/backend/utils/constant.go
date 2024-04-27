@@ -9,3 +9,7 @@ var noToVisit = map[string]bool{
 }
 
 const NumOfNodeWORKERS = 32
+const MAX_HOS_CONNECTION = 100
+const TIMEOUT = 10
+const MAX_MEMO_SIZE = 200000
+const SIZE_OF_CONTAINER = 500

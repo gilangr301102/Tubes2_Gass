@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/net/html"
@@ -63,31 +62,6 @@ func getChilds2(article string, ch chan ArticleInfo) {
 	fmt.Println("Already scrapped2: ", Articles)
 }
 
-func threadScrappingProcessing(resultQueue chan<- []Node, errQueue chan<- error, urlQueue <-chan string, wg *sync.WaitGroup) {
-	for url := range urlQueue {
-		ch := make(chan []Node)
-		errCh := make(chan error)
-
-		go getChilds(url, ch, errCh)
-
-		select {
-		case result := <-ch:
-			resultQueue <- result
-		case err := <-errCh:
-			errQueue <- err
-		}
-	}
-
-	wg.Done()
-}
-
-func multithreadScrappingProcessing(resultQueue chan<- []Node, errQueue chan<- error, urlQueue <-chan string, wg *sync.WaitGroup) {
-	for i := 0; i < NumOfNodeWORKERS; i++ {
-		wg.Add(1)
-		go threadScrappingProcessing(resultQueue, errQueue, urlQueue, wg)
-	}
-}
-
 // function to fetch links from a given url
 func getChilds(urlString string, ch chan<- []Node, errCh chan<- error) {
 	// reserve a spot in the semaphore to limit concurrent HTTP requests
@@ -105,7 +79,7 @@ func getChilds(urlString string, ch chan<- []Node, errCh chan<- error) {
 	req.Header.Set("Connection", "keep-alive")
 
 	// perform the http request
-	res, err := httpClient.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
 		errCh <- err
 		return

@@ -7,18 +7,16 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 )
 
-const CacheSize = 200000
+const CacheSize = MAX_MEMO_SIZE
 
-var (
-	httpClient = &http.Client{
-		Timeout: time.Second * 10,
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost: 100,
-		},
-	}
-	urlCache = make(map[string][]Node)
-	sem      = make(chan struct{}, 500)
-)
+var client = &http.Client{
+	Timeout: time.Second * TIMEOUT,
+	Transport: &http.Transport{
+		MaxIdleConnsPerHost: MAX_HOS_CONNECTION,
+	},
+}
+var urlCache = make(map[string][]Node)
+var sem = make(chan struct{}, SIZE_OF_CONTAINER)
 
 var Articles *lru.Cache
 
