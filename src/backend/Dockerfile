@@ -1,5 +1,17 @@
-FROM golang:latest
+# Use an official Go runtime as a parent image for backend
+FROM golang:latest AS backend
 
-RUN mkdir -p /go/src/github.com/gilangr301102/Tubes2_Gass/src/backend
-ADD . /go/src/github.com/gilangr301102/Tubes2_Gass/src/backend
-WORKDIR /go/src/github.com/gilangr301102/Tubes2_Gass/src/backend
+# Set the Current Working Directory inside the container
+WORKDIR /
+
+# Copy the Go project directory into the container
+COPY / .
+
+# Build the Go app
+RUN go build -o main .
+
+# Expose port 8080 to the outside world
+EXPOSE 8080
+
+# Command to run the backend
+CMD ["./main"]

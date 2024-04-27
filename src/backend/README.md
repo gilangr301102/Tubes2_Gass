@@ -17,6 +17,8 @@ Adapun algoritma BFS basic yang diimplementasikan pada permasalahan ini ialah de
 ## How to Run Backend
 
  > Cara 1: Dengan menggunakan `Dockerfile`.
+ 1. build: `docker build -t gass-backend .`
+ 2. run: `docker run -p 8080:8080 gass-backend`
 
  > Cara 2: Install Go dan menjalankan `go run main.go`.
 

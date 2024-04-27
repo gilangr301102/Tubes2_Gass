@@ -95,9 +95,9 @@ const App = () => {
       setElapsedTime(response.elapsed_time);
       setNumOfArticleChecked(response.num_of_article_checked);
       setNumOfNodeArticleVisited(response.num_of_node_article_visited);
-
-      if (isFindAll) {
-        setNumberOfPath(response.number_of_path);
+      if (isFindAll || algorithm === 'IDS') {
+        if (isFindAll) setNumberOfPath(response.number_of_path);
+        else setNumberOfPath("1")
         setPaths2(response.path);
       }else{
         setPaths2([response.path]);
@@ -195,6 +195,24 @@ const App = () => {
           <p>Number of Articles Checked: {numOfArticleChecked}</p>
           <p>Number of Node Articles Visited: {numOfNodeArticleVisited}</p>
           <p>Number of Paths: {numberOfPath}</p>
+          <div className="table-container">
+            <table className="styled-table">
+              <thead>
+                <tr>
+                  <th>Path Number</th>
+                  <th>Nodes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paths2.map((path, index) => (
+                  <tr key={index}>
+                    <td>Path {index + 1}</td>
+                    <td>{path.join(' -> ')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
       {/* Display graph visualization */}
