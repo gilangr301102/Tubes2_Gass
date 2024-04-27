@@ -7,3 +7,5 @@ const DEFAULT_ROOT_VAL = "root"
 var noToVisit = map[string]bool{
 	"/wiki/Special:Random": true,
 }
+
+const NumOfNodeWORKERS = 32

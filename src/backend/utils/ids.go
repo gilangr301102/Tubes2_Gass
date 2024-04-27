@@ -1,134 +1,110 @@
 package utils
 
 import (
-	"backend/wikirace/models"
+	"fmt"
 	"log"
-	"runtime"
+	"strings"
 	"sync"
 )
 
-var numNodesPerLevel int = runtime.NumCPU() * 10
+func isSearchCondition(flag bool, depth int, foundCount int) bool {
+	if !flag {
+		return foundCount == 0
+	}
 
-// getPathIDDFS retrieves the path using IDDFS.
-func getPathIDDFS(articleToParent *map[string]string, endArticle string) *[]string {
-	reversedPath := make([]string, 0)
-	currentArticle := endArticle
-	for currentArticle != "root" {
-		reversedPath = append(reversedPath, currentArticle)
-		currentArticle = (*articleToParent)[currentArticle]
-	}
-	pathLen := len(reversedPath)
-	path := make([]string, pathLen)
-	for i := 0; i < pathLen; i++ {
-		path[i] = URL_SCRAPPING_WIKIPEDIA + reversedPath[pathLen-i-1]
-	}
-	return &path
+	return depth <= foundCount
 }
 
-// IDDFS performs Iterative Deepening Depth-First Search.
-func IDDFS(startArticle string, endArticle string, maxDepth int, articleToParent *map[string]string, outputCh chan models.ArticleInfo1, wg *sync.WaitGroup) bool {
-	if startArticle == endArticle {
-		return true
-	}
-	if maxDepth <= 0 {
-		return false
-	}
-	for articleWithParent := range outputCh {
-		nextArticle := articleWithParent.Article
-		if (*articleToParent)[nextArticle] == "" {
-			(*articleToParent)[nextArticle] = articleWithParent.ParentArticle
-			if IDDFS(nextArticle, endArticle, maxDepth-1, articleToParent, outputCh, wg) {
-				return true
-			}
-		}
-	}
-	return false
-}
+// IDS Algorithm
+func getShortestPathIDS(start Node, target Node, maxDepth int, findAll bool) (int, int, int, [][]string) {
+	var numOfArticlesChecked int
+	var articlesLoop int
+	var foundCount int = maxDepth + 1
 
-// GetShortestPathIDDFS finds the shortest path using IDDFS.
-func GetShortestPathIDDFS(startUrl string, endUrl string, maxDepth int) (*[]string, *map[string]string, string) {
-	articleToParent := make(map[string]string)
-	emptyPath := make([]string, 0)
-	maxDepthReachedMsg := ""
-
-	startArticle, err := GetArticleNameFromURLString(startUrl)
-	if err != nil || !IsReachable(startUrl) {
-		log.Printf("Invalid StartURL: %s\n", startUrl)
-		return &emptyPath, &articleToParent, "Invalid StartURL"
-	}
-	endArticle, err := GetArticleNameFromURLString(endUrl)
-	if err != nil || !IsReachable(endUrl) {
-		log.Printf("Invalid EndURL: %s\n", endUrl)
-		return &emptyPath, &articleToParent, "Invalid EndURL"
-	}
-	articleToParent[startArticle] = "root"
-	if startUrl == endUrl {
-		emptyPath = append(emptyPath, startUrl)
-		return &emptyPath, &articleToParent, "Start and End URLs are the same"
+	if !findAll {
+		foundCount = 0
 	}
 
-	outputCh := make(chan models.ArticleInfo1)
+	urlQueue := make(chan string, 500)
+	resultQueue := make(chan []Node, 500)
+	errQueue := make(chan error, 500)
+	results := make([][]string, 0)
+	pathSet := make(map[string]bool)
+
+	// create multithread to get the scrapping data
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go scrappedArticleAndSync(startArticle, outputCh, &wg)
-	go closeChannelOnWg(outputCh, &wg)
+	multithreadScrappingProcessing(resultQueue, errQueue, urlQueue, &wg)
 
-	level := 0
-	found := false
+	// iterate through increasing depth
+	for depth := 0; depth <= maxDepth && isSearchCondition(findAll, depth, foundCount); depth++ {
+		visited := make(map[string]bool)
+		var stack []Node
 
-	for {
-		scrappedDatas := make([]string, 0)
-		for articleWithParent := range outputCh {
-			nextArticle := articleWithParent.Article
-			if articleToParent[nextArticle] == "" {
-				articleToParent[nextArticle] = articleWithParent.ParentArticle
-				if nextArticle == endArticle {
-					found = true
+		// set the initial path for the start node
+		start.Path = []string{start.Title}
+		stack = append(stack, start)
+
+		// iterate through the stack
+		for len(stack) > 0 && (foundCount == 0 || findAll) {
+			// pop the last element from the stack
+			current := stack[len(stack)-1]
+			pathKey := strings.Join(current.Path, "^")
+			stack = stack[:len(stack)-1]
+
+			// check if the current node is the target
+			if current.Title == target.Title && !pathSet[pathKey] {
+				results = append(results, current.Path)
+				pathSet[pathKey] = true
+				if findAll && depth < foundCount {
+					foundCount = depth
+				} else if !findAll {
+					foundCount = 1
 					break
 				}
-				scrappedDatas = append(scrappedDatas, nextArticle)
+			}
+			if len(current.Path) > depth || visited[current.URL] {
+				continue
+			}
+
+			// mark the current node as visited
+			visited[current.URL] = true
+			urlQueue <- current.URL
+
+			// get the neighbors of the current node
+			select {
+			case neighbors, ok := <-resultQueue:
+				if !ok {
+					// resultQueue has been closed
+					break
+				}
+				for _, neighbor := range neighbors {
+					if !visited[neighbor.URL] {
+						neighbor.Path = append([]string(nil), current.Path...)
+						neighbor.Path = append(neighbor.Path, neighbor.Title)
+						stack = append(stack, neighbor)
+						articlesLoop++
+					}
+				}
+				numOfArticlesChecked++
+			case err := <-errQueue:
+				log.Println(err)
+				// Optionally handle error and continue the loop
 			}
 		}
-		log.Printf("Level %d\n", level)
-		if found {
-			log.Printf("Successfully Found the Solution!")
-			break
-		}
-		log.Printf(
-			"Collected %d outputs from scrapping data the child\n",
-			len(scrappedDatas))
-		level++
-
-		inputCh := make(chan string)
-		nextOutputCh := make(chan models.ArticleInfo1, 1000)
-		var nextWg sync.WaitGroup
-		nextWg.Add(numNodesPerLevel)
-		for i := 0; i < numNodesPerLevel; i++ {
-			go scrappedArticlesAndSync(inputCh, nextOutputCh, &nextWg)
-		}
-
-		go closeChannelOnWg(nextOutputCh, &nextWg)
-		log.Printf("Level %d: Started %d Scrapeds\n", level, numNodesPerLevel)
-
-		go feedArticlesIntoChannel(scrappedDatas, inputCh)
-		outputCh = nextOutputCh
-
-		if level >= maxDepth {
-			maxDepthReachedMsg = "Maximum Depth Reached!"
-			log.Printf(maxDepthReachedMsg)
-			break
-		}
-
-		// Perform IDDFS at the current level
-		if IDDFS(startArticle, endArticle, level, &articleToParent, outputCh, &nextWg) {
-			found = true
-			break
-		}
 	}
 
-	if maxDepthReachedMsg != "" {
-		return &emptyPath, &articleToParent, maxDepthReachedMsg
+	close(urlQueue)
+	wg.Wait()
+	close(resultQueue)
+	close(errQueue)
+
+	numberofPath := len(results)
+
+	if numberofPath != 0 {
+		fmt.Printf("Successfully get the Result: %v\n", results)
+	} else {
+		fmt.Println("No path found.")
 	}
 
-	return getPathIDDFS(&articleToParent, endArticle), &articleToParent, ""
+	return numOfArticlesChecked, articlesLoop, numberofPath, results
 }

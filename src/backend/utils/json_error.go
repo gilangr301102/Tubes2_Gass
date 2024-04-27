@@ -1,4 +1,4 @@
-package models
+package utils
 
 type JsonError struct {
 	Code int    `json:"code"`

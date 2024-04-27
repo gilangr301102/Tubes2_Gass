@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"backend/wikirace/models"
 	"log"
 	"runtime"
 	"sync"
@@ -69,7 +68,7 @@ func GetShortestPathBFS(startUrl string, endUrl string) (*[]string, *map[string]
 	}
 
 	// Initialize the output channel and wait group
-	outputCh := make(chan models.ArticleInfo1)
+	outputCh := make(chan ArticleInfo)
 	// Wait group to wait for all the goroutines to finish
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -110,7 +109,7 @@ func GetShortestPathBFS(startUrl string, endUrl string) (*[]string, *map[string]
 
 		// Start the next level
 		inputCh := make(chan string)
-		nextOutputCh := make(chan models.ArticleInfo1, 1000)
+		nextOutputCh := make(chan ArticleInfo, 1000)
 		var nextWg sync.WaitGroup
 		nextWg.Add(numNodesPerLevelBFS)
 		for i := 0; i < numNodesPerLevelBFS; i++ {
