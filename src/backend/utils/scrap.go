@@ -112,7 +112,7 @@ func getChilds(urlString string, ch chan<- []Node, errCh chan<- error) {
 				return
 			}
 			title = strings.ReplaceAll(title, "_", " ") // Replace underscores with spaces
-			fullURL := "https://en.wikipedia.org" + href
+			fullURL := WIKIPEDIA_URL_EN + href
 			nodes = append(nodes, Node{Title: title, URL: fullURL, Path: []string{title}}) // create a new node with the link's details
 		}
 	})

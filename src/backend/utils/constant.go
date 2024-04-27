@@ -1,6 +1,8 @@
 package utils
 
-const URL_SCRAPPING_WIKIPEDIA = "https://en.wikipedia.org/wiki/"
+const WIKIPEDIA_URL_EN = "https://en.wikipedia.org"
+
+const URL_SCRAPPING_WIKIPEDIA = WIKIPEDIA_URL_EN + "/wiki/"
 
 const DEFAULT_ROOT_VAL = "root"
 
