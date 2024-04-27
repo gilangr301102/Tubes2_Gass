@@ -7,9 +7,9 @@ import (
 	"sync"
 )
 
-var numNodesPerLevel int = runtime.NumCPU() * 10
+var numNodesPerLevelBFS int = runtime.NumCPU() * 10
 
-func getPath(articleToParent *map[string]string, endArticle string) *[]string {
+func getPathBFS(articleToParent *map[string]string, endArticle string) *[]string {
 	// Initialize an empty slice to store the reversed path
 	reversedPath := make([]string, 0)
 
@@ -112,19 +112,19 @@ func GetShortestPathBFS(startUrl string, endUrl string) (*[]string, *map[string]
 		inputCh := make(chan string)
 		nextOutputCh := make(chan models.ArticleInfo1, 1000)
 		var nextWg sync.WaitGroup
-		nextWg.Add(numNodesPerLevel)
-		for i := 0; i < numNodesPerLevel; i++ {
+		nextWg.Add(numNodesPerLevelBFS)
+		for i := 0; i < numNodesPerLevelBFS; i++ {
 			go scrappedArticlesAndSync(inputCh, nextOutputCh, &nextWg)
 		}
 
 		// close the output channel when all the goroutines are done
 		go closeChannelOnWg(nextOutputCh, &nextWg)
-		log.Printf("Level %d: Started %d Scrapeds\n", level, numNodesPerLevel)
+		log.Printf("Level %d: Started %d Scrapeds\n", level, numNodesPerLevelBFS)
 
 		// feed articles into the input channel
 		go feedArticlesIntoChannel(scrappedDatas, inputCh)
 		outputCh = nextOutputCh
 	}
 
-	return getPath(&articleToParent, endArticle), &articleToParent
+	return getPathBFS(&articleToParent, endArticle), &articleToParent
 }
